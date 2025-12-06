@@ -1,0 +1,6 @@
+@Kantin_Paramadina_HostAddress = http://localhost:5104
+
+GET {{Kantin_Paramadina_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
