@@ -19,23 +19,28 @@ namespace Kantin_Paramadina.Mappings
                 .ForMember(dest => dest.StockQuantity,
                            opt => opt.MapFrom(src => src.Stock != null ? src.Stock.Quantity : 0))
                 .ForMember(dest => dest.OutletName,
-                           opt => opt.MapFrom(src => src.Outlet != null ? src.Outlet.Name : null));
+                           opt => opt.MapFrom(src => src.Outlet != null ? src.Outlet.Name : null))
+                .ForMember(dest => dest.ImageUrl,
+                           opt => opt.MapFrom(src => src.ImageUrl));
 
             CreateMap<MenuItemCreateDto, MenuItem>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.Stock, opt => opt.Ignore())
-                .ForMember(dest => dest.Outlet, opt => opt.Ignore());
+                .ForMember(dest => dest.Outlet, opt => opt.Ignore())
+                .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => src.ImageUrl));
 
             CreateMap<MenuItemUpdateDto, MenuItem>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.Stock, opt => opt.Ignore())
-                .ForMember(dest => dest.Outlet, opt => opt.Ignore());
+                .ForMember(dest => dest.Outlet, opt => opt.Ignore())
+                .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => src.ImageUrl));
 
             // Transaction ↔ TransactionDto
             CreateMap<Transaction, TransactionDto>()
                 .ForMember(dest => dest.OutletName,
                     opt => opt.MapFrom(src => src.Outlet != null ? src.Outlet.Name : null))
-                .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.Items));
+                .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.Items))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status));
 
             CreateMap<TransactionCreateDto, Transaction>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
@@ -58,6 +63,9 @@ namespace Kantin_Paramadina.Mappings
                 .ForMember(dest => dest.UnitPrice, opt => opt.Ignore()) // harga ditentukan dari menu, bukan input user
                 .ForMember(dest => dest.MenuItem, opt => opt.Ignore())
                 .ForMember(dest => dest.Transaction, opt => opt.Ignore());
+
+            // ===== USER =====
+            CreateMap<User, UserDto>();
         }
     }
 

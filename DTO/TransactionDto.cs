@@ -8,6 +8,7 @@
         public decimal TotalAmount { get; set; }
         public string? OutletName { get; set; }
         public List<TransactionItemDto>? Items { get; set; }
+        public int Status { get; set; }
 
     }
 }

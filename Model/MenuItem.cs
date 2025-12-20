@@ -12,6 +12,9 @@ namespace Kantin_Paramadina.Model
         public int OutletId { get; set; }
         public Outlet? Outlet { get; set; }
 
+        [MaxLength(255)]
+        public string? ImageUrl { get; set; }
+
         // stok referensi
         public Stock? Stock { get; set; }
     }

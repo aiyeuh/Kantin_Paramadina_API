@@ -45,6 +45,30 @@ public class OutletsController : ControllerBase
 
         return Ok(_mapper.Map<OutletDto>(outlet));
     }
+
+    [HttpPost]
+    public async Task<ActionResult<OutletDto>> Create([FromBody] OutletCreateDto dto)
+    {
+        // Ambil role dari JWT
+        var role = User.FindFirst("role")?.Value;
+        if (role == null || role.ToLower() != "admin")
+            return Unauthorized(new { message = "Hanya Admin yang dapat membuat outlet." });
+
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var outlet = _mapper.Map<Outlet>(dto);
+        _db.Outlets.Add(outlet);
+        await _db.SaveChangesAsync();
+
+        var result = await _db.Outlets
+            .Include(o => o.MenuItems!)
+                .ThenInclude(m => m.Stock)
+            .FirstOrDefaultAsync(o => o.Id == outlet.Id);
+
+        return CreatedAtAction(nameof(GetById), new { id = outlet.Id }, _mapper.Map<OutletDto>(result));
+    }
+
     [HttpPut("{id}")]
     public async Task<ActionResult> UpdateOutlet(int id, [FromBody] OutletUpdateDto dto)
     {

@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Text.Json;
+using Microsoft.AspNetCore.SignalR;
+using Kantin_Paramadina.Hubs;
 
 namespace Kantin_Paramadina.Controllers;
 
@@ -16,11 +18,13 @@ public class TransactionsController : ControllerBase
 {
     private readonly ApplicationDbContext _db;
     private readonly IMapper _mapper;
+    private readonly IHubContext<TransactionHub> _hub;
 
-    public TransactionsController(ApplicationDbContext db, IMapper mapper)
+    public TransactionsController(ApplicationDbContext db, IMapper mapper, IHubContext<TransactionHub> hub)
     {
         _db = db;
         _mapper = mapper;
+        _hub = hub;
     }
 
     [HttpPost]
@@ -144,6 +148,28 @@ public class TransactionsController : ControllerBase
                     throw;
                 }
             });
+
+            // Send realtime notification to outlet group
+            try
+            {
+                if (newTransaction?.OutletId != null)
+                {
+                    var payload = new
+                    {
+                        id = newTransaction.Id,
+                        customerName = newTransaction.CustomerName,
+                        totalAmount = newTransaction.TotalAmount,
+                        createdAt = newTransaction.CreatedAt
+                    };
+
+                    await _hub.Clients.Group($"Outlet_{newTransaction.OutletId}")
+                        .SendAsync("TransactionCreated", payload);
+                }
+            }
+            catch
+            {
+                // ignore hub errors
+            }
 
             return Ok(new
             {

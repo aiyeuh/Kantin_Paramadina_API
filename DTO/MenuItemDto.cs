@@ -10,5 +10,6 @@
         public int OutletId { get; set; }
         public string? OutletName { get; set; }
         public int? StockQuantity { get; set; }
+        public string? ImageUrl { get; set; }
     }
 }

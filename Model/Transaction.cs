@@ -17,5 +17,8 @@ namespace Kantin_Paramadina.Model
 
         public string PaymentMethod { get; set; } = "COD"; // "COD" atau "QRIS"
         public string? PaymentProofPath { get; set; } // path bukti pembayaran QRIS
+
+        // Status transaksi: 1 = pesanan diterima, 2 = sedang dimasak, 3 = siap diambil, 4 = selesai, 5 = dibatalkan
+        public int Status { get; set; } = 1;
     }
 }

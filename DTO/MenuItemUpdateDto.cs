@@ -16,5 +16,8 @@ namespace Kantin_Paramadina.DTO
 
         [Range(0, 1000)]
         public int? StockQuantity { get; set; }
+
+        [StringLength(255)]
+        public string? ImageUrl { get; set; }
     }
 }

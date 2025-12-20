@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Kantin_Paramadina.Middleware;
 using System.IdentityModel.Tokens.Jwt;
+using Kantin_Paramadina.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
@@ -37,9 +38,27 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             NameClaimType = "username",
             RoleClaimType = "role"
         };
+
+        // For SignalR authentication over WebSockets
+        opt.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"].FirstOrDefault();
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/transactionHub"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
     });
 
 builder.Services.AddAuthorization();
+
+// Add SignalR
+builder.Services.AddSignalR();
 
 // ───── AutoMapper & Swagger ─────
 builder.Services.AddAutoMapper(typeof(MappingProfile));
@@ -76,25 +95,6 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.Migrate();
-    //if (!db.Users.Any())
-    //{
-    //    var admin = new User
-    //    {
-    //        Username = "admin",
-    //        PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"),
-    //        Role = "Admin",
-    //        FullName = "Administrator"
-    //    };
-    //    var cust = new User
-    //    {
-    //        Username = "fakhri",
-    //        PasswordHash = BCrypt.Net.BCrypt.HashPassword("fakhri123"),
-    //        Role = "Customer",
-    //        FullName = "Fakhri Andika"
-    //    };
-    //    db.Users.AddRange(admin, cust);
-    //    db.SaveChanges();
-    //}
 }
 
 // ───── Pipeline ─────
@@ -108,5 +108,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseMiddleware<TokenRevocationMiddleware>(); // cek blacklist token
 app.UseAuthorization();
+
 app.MapControllers();
+app.MapHub<TransactionHub>("/transactionHub");
 app.Run();
