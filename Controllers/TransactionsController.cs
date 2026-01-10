@@ -8,7 +8,6 @@ using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.SignalR;
 using Kantin_Paramadina.Hubs;
-using Kantin_Paramadina.Services;
 
 namespace Kantin_Paramadina.Controllers;
 
@@ -22,12 +21,11 @@ public class TransactionsController : ControllerBase
     private readonly IHubContext<TransactionHub> _hub;
     private readonly MidtransSnapService _midtransSnapService;
 
-    public TransactionsController(ApplicationDbContext db, IMapper mapper, IHubContext<TransactionHub> hub, MidtransSnapService midtransSnapService)
+    public TransactionsController(ApplicationDbContext db, IMapper mapper, IHubContext<TransactionHub> hub)
     {
         _db = db;
         _mapper = mapper;
         _hub = hub;
-        _midtransSnapService = midtransSnapService;
     }
 
     [HttpPost]
@@ -116,21 +114,6 @@ public class TransactionsController : ControllerBase
 
                         // Hitung total
                         newTransaction.TotalAmount += menu.Price * itemDto.Quantity;
-                    }
-                    if (newTransaction.PaymentMethod == "QRIS")
-                    {
-                        var snapResponse = await _midtransSnapService.CreateQrisTransactionAsync(
-                            newTransaction.Id.ToString(), newTransaction.TotalAmount);
-
-                        if (snapResponse != null && snapResponse.status_code == "201")
-                        {
-                            newTransaction.Status = 1; // Berhasil
-                        }
-                        //else
-                        //{
-                        //    newTransaction.Status = 5; // Gagal
-                        //}
-                        await _db.SaveChangesAsync();
                     }
                     // 🔹 Simpan bukti QRIS (jika ada)
                     if (dto.PaymentMethod == "QRIS" && form.PaymentProof != null)
