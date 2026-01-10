@@ -9,6 +9,7 @@ using Microsoft.OpenApi.Models;
 using Kantin_Paramadina.Middleware;
 using System.IdentityModel.Tokens.Jwt;
 using Kantin_Paramadina.Hubs;
+using Kantin_Paramadina.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
@@ -56,6 +57,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+
+// Add Midtrans (Payment Gateway) HttpClient
+builder.Services.AddHttpClient<MidtransSnapService>();
 
 // Add SignalR
 builder.Services.AddSignalR();
