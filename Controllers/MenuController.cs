@@ -49,12 +49,36 @@ public class MenuController : ControllerBase
 
     // ✅ POST: api/menu
     [HttpPost]
-    public async Task<ActionResult<MenuItemDto>> Create([FromBody] MenuItemCreateDto dto)
+    [RequestSizeLimit(10_000_000)] // Maks 10 MB untuk file
+    public async Task<ActionResult<MenuItemDto>> Create([FromForm] MenuItemCreateDto dto)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
         var entity = _mapper.Map<MenuItem>(dto);
+
+        // 🔹 Proses upload gambar jika ada
+        if (dto.ImageFile != null)
+        {
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+            var ext = Path.GetExtension(dto.ImageFile.FileName).ToLowerInvariant();
+
+            if (!allowedExtensions.Contains(ext))
+                return BadRequest(new { message = "Format file tidak valid. Hanya .jpg/.jpeg/.png/.gif diperbolehkan." });
+
+            var uploadDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "menu");
+            if (!Directory.Exists(uploadDir))
+                Directory.CreateDirectory(uploadDir);
+
+            var fileName = $"{Guid.NewGuid()}{ext}";
+            var filePath = Path.Combine(uploadDir, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+                await dto.ImageFile.CopyToAsync(stream);
+
+            entity.ImageUrl = $"/uploads/menu/{fileName}";
+        }
+
         _db.MenuItems.Add(entity);
         await _db.SaveChangesAsync();
 
@@ -79,7 +103,8 @@ public class MenuController : ControllerBase
 
     // ✅ PUT: api/menu/5
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] MenuItemUpdateDto dto)
+    [RequestSizeLimit(10_000_000)] // Maks 10 MB untuk file
+    public async Task<IActionResult> Update(int id, [FromForm] MenuItemUpdateDto dto)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
@@ -91,7 +116,46 @@ public class MenuController : ControllerBase
         if (entity == null)
             return NotFound();
 
-        _mapper.Map(dto, entity);
+        // Jika ada file upload gambar baru
+        if (dto.ImageFile != null)
+        {
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+            var ext = Path.GetExtension(dto.ImageFile.FileName).ToLowerInvariant();
+
+            if (!allowedExtensions.Contains(ext))
+                return BadRequest(new { message = "Format file tidak valid. Hanya .jpg/.jpeg/.png/.gif diperbolehkan." });
+
+            // Hapus file lama jika ada
+            if (!string.IsNullOrEmpty(entity.ImageUrl) && entity.ImageUrl.StartsWith("/uploads/menu/"))
+            {
+                var oldFileName = Path.GetFileName(entity.ImageUrl);
+                var oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "menu", oldFileName);
+                if (System.IO.File.Exists(oldFilePath))
+                    System.IO.File.Delete(oldFilePath);
+            }
+
+            var uploadDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "menu");
+            if (!Directory.Exists(uploadDir))
+                Directory.CreateDirectory(uploadDir);
+
+            var fileName = $"{Guid.NewGuid()}{ext}";
+            var filePath = Path.Combine(uploadDir, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+                await dto.ImageFile.CopyToAsync(stream);
+
+            entity.ImageUrl = $"/uploads/menu/{fileName}";
+        }
+        else if (!string.IsNullOrEmpty(dto.ImageUrl))
+        {
+            // Gunakan ImageUrl string jika tidak ada file upload
+            entity.ImageUrl = dto.ImageUrl;
+        }
+
+        // Update property lainnya
+        entity.Name = dto.Name;
+        entity.Description = dto.Description;
+        entity.Price = dto.Price;
 
         if (entity.Stock != null && dto.StockQuantity.HasValue)
             entity.Stock.Quantity = dto.StockQuantity.Value;
