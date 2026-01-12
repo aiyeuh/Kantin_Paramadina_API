@@ -28,7 +28,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowReactApp",
         policy =>
         {
-            policy.WithOrigins("http://localhost:5173") // <-- Masukkan URL React kamu di sini!
+            policy.WithOrigins("https://kantin.jackserver.site", "http://localhost:5173")// <-- Masukkan URL React kamu di sini!
                   .AllowAnyHeader()
                   .AllowAnyMethod(); // Ini yang mengizinkan method OPTIONS, GET, POST, PUT, dll
         });
