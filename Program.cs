@@ -124,6 +124,7 @@ app.UseCors("AllowReactApp");
 app.UseAuthentication();
 app.UseMiddleware<TokenRevocationMiddleware>(); // cek blacklist token
 app.UseAuthorization();
+app.UseStaticFiles();
 
 app.MapControllers();
 app.MapHub<TransactionHub>("/transactionHub");
