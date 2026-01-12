@@ -11,29 +11,38 @@ using System.IdentityModel.Tokens.Jwt;
 using Kantin_Paramadina.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// 1. Setup Dasar
 JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
-//Connection String ke SQL Server lokal
+
+// Connection String ke SQL Server
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? "Server=HP-Fakhri211000\\SQLEXPRESS;Database=KantinDb;Trusted_Connection=True;Encrypt=False;TrustServerCertificate=True;MultipleActiveResultSets=true";
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-// ───── JWT setup ─────
+// 2. Setup JWT Settings
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
 
+// 3. Setup CORS (Policy Definition)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp",
         policy =>
         {
-            policy.WithOrigins("https://kantin.jackserver.site", "http://localhost:5173")// <-- Masukkan URL React kamu di sini!
+            policy.WithOrigins(
+                    "https://kantin.jackserver.site", // Domain Production
+                    "http://localhost:5173",          // Vite Local
+                  )
                   .AllowAnyHeader()
-                  .AllowAnyMethod(); // Ini yang mengizinkan method OPTIONS, GET, POST, PUT, dll
+                  .AllowAnyMethod()
+                  .AllowCredentials(); // Penting jika pakai SignalR atau Cookie
         });
 });
 
+// 4. Setup Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opt =>
     {
@@ -50,7 +59,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             RoleClaimType = "role"
         };
 
-        // For SignalR authentication over WebSockets
+        // Konfigurasi khusus untuk SignalR via WebSockets
         opt.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
@@ -68,16 +77,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-// Add Midtrans (Payment Gateway) HttpClient
+// 5. Services Lainnya
 builder.Services.AddHttpClient<MidtransSnapService>();
-
-// Add SignalR
 builder.Services.AddSignalR();
-
-// ───── AutoMapper & Swagger ─────
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+
+// 6. Setup Swagger
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Kantin Paramadina API", Version = "v1" });
@@ -104,28 +111,41 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// ───── Seeder Admin/Customer default ─────
+// ───── Seeder Database (Opsional: Hati-hati di Production) ─────
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    db.Database.Migrate();
+    // db.Database.Migrate(); // Uncomment jika ingin auto-migrate
 }
 
-// ───── Pipeline ─────
+// =========================================================
+// PIPELINE MIDDLEWARE (URUTAN SANGAT PENTING!)
+// =========================================================
+
+// 1. Swagger (Development Only)
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+// 2. Redirection & Files
 app.UseHttpsRedirection();
-app.UseStaticFiles(); // 🔹 Serve wwwroot/ untuk gambar menu, qris, dll
-app.UseCors("AllowReactApp");
-app.UseAuthentication();
-app.UseMiddleware<TokenRevocationMiddleware>(); // cek blacklist token
-app.UseAuthorization();
-app.UseStaticFiles();
+app.UseStaticFiles(); // Load file gambar/asset
 
+// 3. Routing (WAJIB DITAMBAHKAN SEBELUM CORS)
+app.UseRouting();
+
+// 4. CORS (WAJIB SESUDAH ROUTING, SEBELUM AUTH)
+app.UseCors("AllowReactApp");
+
+// 5. Authentication & Authorization
+app.UseAuthentication();
+app.UseMiddleware<TokenRevocationMiddleware>(); // Middleware kustom
+app.UseAuthorization();
+
+// 6. Endpoints
 app.MapControllers();
 app.MapHub<TransactionHub>("/transactionHub");
+
 app.Run();
