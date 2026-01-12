@@ -194,8 +194,22 @@ public class TransactionsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<TransactionDto>>> GetAll()
     {
-        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-        var role = User.FindFirst(ClaimTypes.Role)!.Value;
+        var userIdClaim = User.FindFirst("userId")?.Value;
+        var roleClaim = User.FindFirst("role")?.Value;
+
+        return Ok(new 
+        {
+            DebugUser = User.Identity.Name,
+            DebugUserId = userIdClaim, 
+            DebugRole = roleClaim,
+            Message = "Ini adalah mode debug"
+        });
+
+        if (userIdClaim == null || roleClaim == null)
+            return Unauthorized(new { message = "Invalid token claims" });
+
+        var userId = int.Parse(userIdClaim);
+        var role = roleClaim;
 
         IQueryable<Transaction> query = _db.Transactions
             .Include(t => t.Outlet)
@@ -230,8 +244,14 @@ public class TransactionsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<TransactionDto>> GetById(int id)
     {
-        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-        var role = User.FindFirst(ClaimTypes.Role)!.Value;
+        var userIdClaim = User.FindFirst("userId")?.Value;
+        var roleClaim = User.FindFirst("role")?.Value;
+
+        if (userIdClaim == null || roleClaim == null)
+            return Unauthorized(new { message = "Invalid token claims" });
+
+        var userId = int.Parse(userIdClaim);
+        var role = roleClaim;
 
         IQueryable<Transaction> query = _db.Transactions
             .Include(t => t.Outlet)
@@ -262,8 +282,15 @@ public class TransactionsController : ControllerBase
     [HttpGet("recent")]
     public async Task<ActionResult<IEnumerable<TransactionDto>>> GetRecent([FromQuery] int count = 5)
     {
-        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-        var role = User.FindFirst(ClaimTypes.Role)!.Value;
+        var userIdClaim = User.FindFirst("userId")?.Value;
+        var roleClaim = User.FindFirst("role")?.Value;
+        
+
+        if (userIdClaim == null || roleClaim == null)
+            return Unauthorized(new { message = "Invalid token claims" });
+
+        var userId = int.Parse(userIdClaim);
+        var role = roleClaim;
 
         IQueryable<Transaction> query = _db.Transactions
             .Include(t => t.Outlet)
@@ -292,8 +319,14 @@ public class TransactionsController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<ActionResult> Delete(int id)
     {
-        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-        var role = User.FindFirst(ClaimTypes.Role)!.Value;
+        var userIdClaim = User.FindFirst("userId")?.Value;
+        var roleClaim = User.FindFirst("role")?.Value;
+
+        if (userIdClaim == null || roleClaim == null)
+            return Unauthorized(new { message = "Invalid token claims" });
+
+        var userId = int.Parse(userIdClaim);
+        var role = roleClaim;
 
         IQueryable<Transaction> query = _db.Transactions
             .Include(t => t.Items!)

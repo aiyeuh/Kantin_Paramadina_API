@@ -23,6 +23,17 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactApp",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:5173") // <-- Masukkan URL React kamu di sini!
+                  .AllowAnyHeader()
+                  .AllowAnyMethod(); // Ini yang mengizinkan method OPTIONS, GET, POST, PUT, dll
+        });
+});
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opt =>
     {
@@ -108,6 +119,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles(); // 🔹 Serve wwwroot/ untuk gambar menu, qris, dll
+app.UseCors("AllowReactApp");
 app.UseAuthentication();
 app.UseMiddleware<TokenRevocationMiddleware>(); // cek blacklist token
 app.UseAuthorization();

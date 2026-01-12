@@ -20,6 +20,9 @@ namespace Kantin_Paramadina.DTO
         [Range(0, 1000)]
         public int? InitialStockQuantity { get; set; }
 
+        // Support both file upload dan URL string
+        public IFormFile? ImageFile { get; set; }
+
         [StringLength(255)]
         public string? ImageUrl { get; set; }
     }
