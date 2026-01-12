@@ -1,6 +1,6 @@
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=127.0.0.1,1433;Database=KantinDb;User Id=sa;Password=PasswordSuperKuat123!;TrustServerCertificate=True;"
+    "DefaultConnection": "Server=localhost,1433;Database=KantinDb;User Id=sa;Password=;TrustServerCertificate=True;"
   },
   "Jwt": {
     "Key": "MySuperSecretKeyForKantinParamadina",
